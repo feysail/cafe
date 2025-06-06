@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transaction Form</title>
+    <style>
+        body {
+            font-family: "Arial", sans-serif;
+            background-color:rgb(232, 232, 232); 
+            color: #e0e0e0; /* Light text color */
+            margin: 0;
+            padding: 20px;
+        }
+        .wrapper {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .container {
+            flex: 1;
+            margin: 10px;
+            background: rgb(23,26,45); /* Darker container background */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgb(23, 26, 45);
+        }
+        h1 {
+            text-align: center;
+            color: #f0f0f0; /* Light color for headings */
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #ffffff; /* White color for labels */
+        }
+        input[type="text"],
+        input[type="datetime-local"] {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #555; /* Darker border */
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #333; /* Dark input background */
+            color: #e0e0e0; /* Light text color */
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745; /* Button color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838; /* Darker button on hover */
+        }
+        #error_message {
+            color: red;
+            display: none;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 10px;
+            border: 2px solid red;
+            background-color: rgba(255, 0, 0, 0.2); /* Lighter red for error */
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 20px">
+                <img
+                    src="{{ url_for('static', filename='images/WPS Photos(1).png') }}"
+                    alt="AASTU LOGO"
+                    height="200"
+                    width="200"
+                />
+            </div>
+            <h1>AASTU Cafe</h1>
+            <form id="transactionForm" action="/submit" method="post">
+                <label for="barcode">Barcode:</label>
+                <input type="text" id="barcode" name="barcode" required />
+                <span id="full_name_display" class="full-name"></span>
+
+                <label for="service_time">Service Time:</label>
+                <input
+                    type="datetime-local"
+                    id="service_time"
+                    name="service_time"
+                    required
+                />
+
+                <button type="submit">Submit</button>
+            </form>
+            <div id="error_message"></div>
+        </div>
+
+        <div class="container">
+            <h1>Student Information</h1>
+            <label for="full_name">Full Name:</label>
+            <input type="text" id="full_name" name="full_name" required readonly />
+            <label for="student_id_display">Student ID:</label>
+            <input
+                type="text"
+                id="student_id_display"
+                name="student_id_display"
+                required
+                readonly
+            />
+            <label for="student_sex">Sex:</label>
+            <input
+                type="text"
+                id="student_sex"
+                name="student_sex"
+                required
+                readonly
+            />
+            <label for="service_charge">Service Charge:</label>
+            <input
+                type="text"
+                id="service_charge"
+                name="service_charge"
+                required
+                readonly
+            />
+
+            <h2></h2>
+            <ul id="transaction_history"></ul>
+        </div>
+    </div>
+
+    <script>
+        document
+            .getElementById("barcode")
+            .addEventListener("change", function () {
+                const barcode = this.value;
+                fetch(`/get_student/${barcode}`)
+                    .then((response) => response.json())
+                    .then((student) => {
+                        console.log(student); // Log the response
+                        if (student.error) {
+                            document.getElementById("full_name_display").innerText =
+                                student.error;
+                        } else {
+                            document.getElementById("full_name").value = student.full_name;
+                            document.getElementById("student_id_display").value =
+                                student.student_id;
+                            document.getElementById("student_sex").value = student.sex; // Display sex
+                            document.getElementById("service_charge").value =
+                                student.total_service_charge || 0; // Display service charge
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error fetching student info:", error);
+                    });
+            });
+
+        document
+            .getElementById("transactionForm")
+            .addEventListener("submit", function (event) {
+                event.preventDefault(); // Prevent the default form submission
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: "POST",
+                    body: formData,
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        const errorMessage = document.getElementById("error_message");
+                        if (data.error) {
+                            errorMessage.innerHTML = data.error; // Set the error message
+                            errorMessage.style.display = "block"; // Show the error message
+                            document.getElementById("full_name").value = ""; // Clear full name field
+                            document.getElementById("student_id_display").value = ""; // Clear student ID display
+                            document.getElementById("student_sex").value = ""; // Clear sex field
+                            document.getElementById("service_charge").value = ""; // Clear service charge field
+                        } else {
+                            errorMessage.style.display = "none"; // Hide error message on success
+                            document.getElementById("full_name").value = data.full_name;
+                            document.getElementById("student_id_display").value =
+                                data.student_id; // Display student ID
+                            document.getElementById("student_sex").value = data.sex; // Display sex
+                            document.getElementById("service_charge").value =
+                                data.net_charge || 0; // Display service charge
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error submitting form:", error);
+                    });
+            });
+    </script>
+</body>
+</html>
