@@ -122,7 +122,7 @@ with cl2:
 df_filtered["month_year"] = df_filtered["service_time"].dt.to_period("M")
 st.subheader('Time Series Analysis')
 
-# Group by month and sum net_charge
+# Group by month and sum net_chargee
 linechart = df_filtered.groupby(df_filtered["month_year"].dt.strftime("%Y : %b"))["net_charge"].sum().reset_index()
 linechart.rename(columns={"net_charge": "total_net_charge"}, inplace=True)
 
